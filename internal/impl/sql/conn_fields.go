@@ -14,7 +14,7 @@ import (
 	"github.com/benthosdev/benthos/v4/public/service"
 )
 
-var driverField = service.NewStringEnumField("driver", "mysql", "postgres", "clickhouse", "mssql", "sqlite", "oracle", "snowflake", "trino").
+var driverField = service.NewStringEnumField("driver", "mysql", "postgres", "clickhouse", "mssql", "sqlite", "oracle", "snowflake", "trino", "bigquery").
 	Description("A database [driver](#drivers) to use.")
 
 var dsnField = service.NewStringField("dsn").
@@ -34,6 +34,7 @@ The following is a list of supported drivers, their placeholder style, and their
 ` + "| `oracle` | `oracle://[username[:password]@][netloc][:port]/service_name?server=server2&server=server3` |" + `
 ` + "| `snowflake` | `username[:password]@account_identifier/dbname/schemaname[?param1=value&...&paramN=valueN]` |" + `
 ` + "| `trino` | [`http[s]://user[:pass]@host[:port][?parameters]`](https://github.com/trinodb/trino-go-client#dsn-data-source-name)" + `
+` + "| `bigquery` | [`bigquery://project-id/location/dataset[?scopes=scope1,scope2&endpoint=some_url_encoded_endpoint&disable_auth=false]`](https://github.com/go-gorm/bigquery?tab=readme-ov-file#vanilla-sqldb-usage)" + `
 
 Please note that the ` + "`postgres`" + ` driver enforces SSL by default, you can override this with the parameter ` + "`sslmode=disable`" + ` if required.
 
