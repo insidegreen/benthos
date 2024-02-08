@@ -72,7 +72,7 @@ func TestIntegrationCRDB(t *testing.T) {
 
 	template := fmt.Sprintf(`
 cockroachdb_changefeed:
-  dsn: postgresql://root@localhost:%v/defaultdb?sslmode=disable
+  dsn: postgres://root@localhost:%v/defaultdb?sslmode=disable
   tables:
     - foo
   cursor_cache: foocache

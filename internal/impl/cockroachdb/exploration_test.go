@@ -1,7 +1,8 @@
-package crdb
+package crdb_test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	_ "github.com/benthosdev/benthos/v4/public/components/io"
 	_ "github.com/benthosdev/benthos/v4/public/components/pure"
+	_ "github.com/lib/pq"
 )
 
 func TestIntegrationExploration(t *testing.T) {
@@ -35,7 +37,7 @@ func TestIntegrationExploration(t *testing.T) {
 	})
 
 	port := resource.GetPort("26257/tcp")
-	dsn := fmt.Sprintf("postgresql://root@localhost:%v/defaultdb?sslmode=disable", port)
+	dsn := fmt.Sprintf("postgres://root@localhost:%v/defaultdb?sslmode=disable", port)
 
 	var pgpool *pgxpool.Pool
 	require.NoError(t, resource.Expire(900))
@@ -58,7 +60,7 @@ func TestIntegrationExploration(t *testing.T) {
 		pgpool.Close()
 	})
 
-	cfpool, err := pgxpool.Connect(context.Background(), dsn)
+	cfdb, err := sql.Open("postgres", dsn)
 	require.NoError(t, err)
 
 	// Create a backlog of rows
@@ -70,24 +72,28 @@ func TestIntegrationExploration(t *testing.T) {
 		}
 	}
 
-	rows, err := cfpool.Query(context.Background(), "EXPERIMENTAL CHANGEFEED FOR foo WITH UPDATED")
+	rowsCtx, done := context.WithCancel(context.Background())
+
+	rows, err := cfdb.QueryContext(rowsCtx, "EXPERIMENTAL CHANGEFEED FOR foo WITH UPDATED")
 	require.NoError(t, err)
 
 	var latestCursor string
 	for j := 0; j < 100; j++ {
 		require.True(t, rows.Next())
-		columns, err := rows.Values()
-		require.NoError(t, err)
-		require.Len(t, columns, 3)
 
-		gObj, err := gabs.ParseJSON(columns[2].([]byte))
+		var a, b, c []byte
+		require.NoError(t, rows.Scan(&a, &b, &c))
+
+		gObj, err := gabs.ParseJSON(c)
 		require.NoError(t, err)
 
 		latestCursor, _ = gObj.S("updated").Data().(string)
 		assert.Equal(t, float64(j), gObj.S("after", "a").Data(), gObj.String())
 	}
 
-	cfpool.Close()
+	done()
+
+	cfdb.Close()
 	rows.Close()
 
 	// Insert some more rows
@@ -98,24 +104,28 @@ func TestIntegrationExploration(t *testing.T) {
 	}
 
 	// Create a new changefeed with a cursor set to the latest updated value
-	cfpool, err = pgxpool.Connect(context.Background(), dsn)
+	cfdb, err = sql.Open("postgres", dsn)
 	require.NoError(t, err)
 
-	rows, err = cfpool.Query(context.Background(), "EXPERIMENTAL CHANGEFEED FOR foo WITH UPDATED, CURSOR="+latestCursor)
+	rowsCtx, done = context.WithCancel(context.Background())
+
+	rows, err = cfdb.QueryContext(rowsCtx, "EXPERIMENTAL CHANGEFEED FOR foo WITH UPDATED, CURSOR=\""+latestCursor+"\"")
 	require.NoError(t, err)
 
 	for j := 0; j < 50; j++ {
 		require.True(t, rows.Next())
-		columns, err := rows.Values()
-		require.NoError(t, err)
-		require.Len(t, columns, 3)
 
-		gObj, err := gabs.ParseJSON(columns[2].([]byte))
+		var a, b, c []byte
+		require.NoError(t, rows.Scan(&a, &b, &c))
+
+		gObj, err := gabs.ParseJSON(c)
 		require.NoError(t, err)
 
 		assert.Equal(t, float64(j+100), gObj.S("after", "a").Data(), gObj.String())
 	}
 
-	cfpool.Close()
+	done()
+
+	cfdb.Close()
 	rows.Close()
 }

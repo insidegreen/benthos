@@ -14,6 +14,8 @@ import (
 
 	"github.com/benthosdev/benthos/v4/internal/shutdown"
 	"github.com/benthosdev/benthos/v4/public/service"
+
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -32,7 +34,7 @@ func crdbChangefeedInputConfig() *service.ConfigSpec {
 		Fields(
 			service.NewStringField("dsn").
 				Description(`A Data Source Name to identify the target database.`).
-				Example("postgresql://user:password@example.com:26257/defaultdb?sslmode=require"),
+				Example("postgres://user:password@example.com:26257/defaultdb?sslmode=require"),
 			service.NewTLSField("tls"),
 			service.NewStringListField("tables").
 				Description("CSV of tables to be included in the changefeed").
@@ -57,9 +59,10 @@ type crdbChangefeedInput struct {
 	rows     pgx.Rows
 	dbMut    sync.Mutex
 
-	res     *service.Resources
-	logger  *service.Logger
-	shutSig *shutdown.Signaller
+	res      *service.Resources
+	logger   *service.Logger
+	shutSig  *shutdown.Signaller
+	closeCtx context.Context
 }
 
 const cursorCacheKey = "crdb_changefeed_cursor"
@@ -70,6 +73,12 @@ func newCRDBChangefeedInputFromConfig(conf *service.ParsedConfig, res *service.R
 		logger:  res.Logger(),
 		shutSig: shutdown.NewSignaller(),
 	}
+
+	// Yes, technically not capturing the done func here could lead to a single
+	// goroutine leak for each crdb input spawned. However, the only logical
+	// place to call this cancellation would be inside our close method, which
+	// already triggers a shutdown signal which would cancel it anyway.
+	c.closeCtx, _ = c.shutSig.CloseAtLeisureCtx(context.Background())
 
 	dsn, err := conf.FieldString("dsn")
 	if err != nil {
@@ -116,7 +125,7 @@ func newCRDBChangefeedInputFromConfig(conf *service.ParsedConfig, res *service.R
 				}
 				return
 			}
-			options = append(options, "CURSOR="+string(cursorBytes))
+			options = append(options, `CURSOR="`+string(cursorBytes)+`"`)
 		}); err != nil {
 			res.Logger().With("error", err.Error()).Error("Failed to access cursor cache.")
 		}
@@ -168,7 +177,7 @@ func (c *crdbChangefeedInput) Connect(ctx context.Context) (err error) {
 	}
 
 	if c.pgPool == nil {
-		if c.pgPool, err = pgxpool.ConnectConfig(ctx, c.pgConfig); err != nil {
+		if c.pgPool, err = pgxpool.ConnectConfig(c.closeCtx, c.pgConfig); err != nil {
 			return
 		}
 		defer func() {
@@ -179,7 +188,7 @@ func (c *crdbChangefeedInput) Connect(ctx context.Context) (err error) {
 	}
 
 	c.logger.Debug(fmt.Sprintf("Running query '%s'", c.statement))
-	c.rows, err = c.pgPool.Query(ctx, c.statement)
+	c.rows, err = c.pgPool.Query(c.closeCtx, c.statement)
 	return
 }
 
