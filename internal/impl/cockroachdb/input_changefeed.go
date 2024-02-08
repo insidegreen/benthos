@@ -133,15 +133,7 @@ func newCRDBChangefeedInputFromConfig(conf *service.ParsedConfig, res *service.R
 	go func() {
 		<-c.shutSig.CloseNowChan()
 
-		c.dbMut.Lock()
-		if c.rows != nil {
-			c.rows.Close()
-			c.rows = nil
-		}
-		if c.pgPool != nil {
-			c.pgPool.Close()
-		}
-		c.dbMut.Unlock()
+		c.closeConnection()
 		c.shutSig.ShutdownComplete()
 	}()
 	return c, nil
@@ -191,6 +183,22 @@ func (c *crdbChangefeedInput) Connect(ctx context.Context) (err error) {
 	return
 }
 
+func (c *crdbChangefeedInput) closeConnection() {
+	c.dbMut.Lock()
+	defer c.dbMut.Unlock()
+
+	// NOTE: We're closing the pool first, it's wrong on some levels, but
+	// apparently closing the rows can just like block forever. So there...
+	if c.pgPool != nil {
+		c.pgPool.Close()
+		c.pgPool = nil
+	}
+	if c.rows != nil {
+		c.rows.Close()
+		c.rows = nil
+	}
+}
+
 func (c *crdbChangefeedInput) Read(ctx context.Context) (*service.Message, service.AckFunc, error) {
 	c.dbMut.Lock()
 	defer c.dbMut.Unlock()
@@ -200,10 +208,7 @@ func (c *crdbChangefeedInput) Read(ctx context.Context) (*service.Message, servi
 	}
 
 	if !c.rows.Next() {
-		defer func() {
-			c.rows.Close()
-			c.rows = nil
-		}()
+		go c.closeConnection()
 		if c.shutSig.ShouldCloseAtLeisure() {
 			return nil, nil, service.ErrNotConnected
 		}
