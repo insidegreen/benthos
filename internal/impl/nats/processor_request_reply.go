@@ -47,13 +47,11 @@ You can access these metadata fields using
 			Example("foo.bar.baz").
 			Example(`${! meta("kafka_topic") }`).
 			Example(`foo.${! json("meta.type") }`)).
-		Field(service.NewInterpolatedStringField("inbox_prefix").
+		Field(service.NewStringField("inbox_prefix").
 			Description("Set an explicit inbox prefix for the response subject").
 			Optional().
 			Advanced().
-			Example("_INBOX_joe").
-			Example(`${! meta("kafka_topic") }`).
-			Example(`_INBOX_.${! json("meta.type") }`)).
+			Example("_INBOX_joe")).
 		Field(service.NewInterpolatedStringMapField("headers").
 			Description("Explicit message headers to add to messages.").
 			Default(map[string]any{}).
