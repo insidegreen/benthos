@@ -51,6 +51,7 @@ label: ""
 nats_request_reply:
   urls: [] # No default (required)
   subject: foo.bar.baz # No default (required)
+  inbox_prefix: _INBOX_joe # No default (optional)
   headers: {}
   metadata:
     include_prefixes: []
@@ -163,6 +164,24 @@ subject: foo.bar.baz
 subject: ${! meta("kafka_topic") }
 
 subject: foo.${! json("meta.type") }
+```
+
+### `inbox_prefix`
+
+Set an explicit inbox prefix for the response subject
+This field supports [interpolation functions](/docs/configuration/interpolation#bloblang-queries).
+
+
+Type: `string`  
+
+```yml
+# Examples
+
+inbox_prefix: _INBOX_joe
+
+inbox_prefix: ${! meta("kafka_topic") }
+
+inbox_prefix: _INBOX_.${! json("meta.type") }
 ```
 
 ### `headers`
