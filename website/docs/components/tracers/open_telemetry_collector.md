@@ -1,5 +1,6 @@
 ---
 title: open_telemetry_collector
+slug: open_telemetry_collector
 type: tracer
 status: experimental
 ---
@@ -64,13 +65,18 @@ A list of http collectors.
 
 Type: `array`  
 
-### `http[].url`
+### `http[].address`
 
-The URL of a collector to send tracing events to.
+The endpoint of a collector to send tracing events to.
 
 
 Type: `string`  
-Default: `"localhost:4318"`  
+
+```yml
+# Examples
+
+address: localhost:4318
+```
 
 ### `http[].secure`
 
@@ -87,13 +93,18 @@ A list of grpc collectors.
 
 Type: `array`  
 
-### `grpc[].url`
+### `grpc[].address`
 
-The URL of a collector to send tracing events to.
+The endpoint of a collector to send tracing events to.
 
 
 Type: `string`  
-Default: `"localhost:4317"`  
+
+```yml
+# Examples
+
+address: localhost:4317
+```
 
 ### `grpc[].secure`
 

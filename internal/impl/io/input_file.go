@@ -58,6 +58,7 @@ input:
 				Description("Whether to delete input files from the disk once they are fully consumed.").
 				Advanced().
 				Default(false),
+			service.NewAutoRetryNacksToggleField(),
 		)
 }
 
@@ -68,7 +69,7 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			return service.AutoRetryNacksBatched(r), nil
+			return service.AutoRetryNacksBatchedToggled(pConf, r)
 		})
 	if err != nil {
 		panic(err)
@@ -197,8 +198,10 @@ func (f *fileConsumer) ReadBatch(ctx context.Context) (service.MessageBatch, ser
 				err = component.ErrTimeout
 			}
 			if err != component.ErrTimeout {
+				f.scannerMut.Lock()
 				scannerInfo.scanner.Close(ctx)
 				f.scannerInfo = nil
+				f.scannerMut.Unlock()
 			}
 			if errors.Is(err, io.EOF) {
 				continue

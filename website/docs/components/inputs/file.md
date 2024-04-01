@@ -1,5 +1,6 @@
 ---
 title: file
+slug: file
 type: input
 status: stable
 categories: ["Local"]
@@ -32,6 +33,7 @@ input:
     paths: [] # No default (required)
     scanner:
       lines: {}
+    auto_replay_nacks: true
 ```
 
 </TabItem>
@@ -46,6 +48,7 @@ input:
     scanner:
       lines: {}
     delete_on_finish: false
+    auto_replay_nacks: true
 ```
 
 </TabItem>
@@ -89,6 +92,14 @@ Whether to delete input files from the disk once they are fully consumed.
 
 Type: `bool`  
 Default: `false`  
+
+### `auto_replay_nacks`
+
+Whether messages that are rejected (nacked) at the output level should be automatically replayed indefinitely, eventually resulting in back pressure if the cause of the rejections is persistent. If set to `false` these messages will instead be deleted. Disabling auto replays can greatly improve memory efficiency of high throughput streams as the original shape of the data can be discarded immediately upon consumption and mutation.
+
+
+Type: `bool`  
+Default: `true`  
 
 ## Examples
 

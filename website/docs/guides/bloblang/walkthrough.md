@@ -9,8 +9,8 @@ Bloblang is the most advanced mapping language that you'll learn from this walkt
 In this walkthrough you'll learn how to make new friends by mapping their documents, and lose old friends as they grow jealous and bitter of your mapping abilities. There are a few ways to execute Bloblang but the way we'll do it in this guide is to pull a Benthos docker image and run the command `benthos blobl server`, which opens up an interactive Bloblang editor:
 
 ```sh
-docker pull jeffail/benthos:latest
-docker run -p 4195:4195 --rm jeffail/benthos blobl server --no-open --host 0.0.0.0
+docker pull ghcr.io/benthosdev/benthos:latest
+docker run -p 4195:4195 --rm ghcr.io/benthosdev/benthos blobl server --no-open --host 0.0.0.0
 ```
 
 :::note Alternatives
@@ -226,6 +226,31 @@ root.pet.treats = if this.pet.is_cute {
 ```
 
 This is possible because field deletions are expressed as assigned values created with the `deleted()` function. This is cool but also in poor taste, treats should be allocated based on need, not cuteness!
+
+### If Statement
+
+The `if` keyword can also be used as a statement in order to conditionally apply a series of mapping assignments, the previous example can be rewritten as:
+
+```coffee
+root = this
+if this.pet.is_cute {
+  root.pet.treats = this.pet.treats + 10
+} else {
+  root.pet.treats = deleted()
+}
+```
+
+Converting this mapping to use a statement has resulted in a more verbose mapping as we had to specify `root.pet.treats` multiple times as an assignment target. However, using `if` as a statement can be beneficial when multiple assignments rely on the same logic:
+
+```coffee
+root = this
+if this.pet.is_cute {
+  root.pet.treats = this.pet.treats + 10
+  root.pet.toys = this.pet.toys + 10
+}
+```
+
+More treats *and* more toys! Lucky Spot!
 
 ### Match Expression
 

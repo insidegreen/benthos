@@ -1,5 +1,6 @@
 ---
 title: sql_select
+slug: sql_select
 type: input
 status: beta
 categories: ["Services"]
@@ -40,6 +41,7 @@ input:
     columns: [] # No default (required)
     where: type = ? and created_at > ? # No default (optional)
     args_mapping: root = [ "article", now().ts_format("2006-01-02") ] # No default (optional)
+    auto_replay_nacks: true
 ```
 
 </TabItem>
@@ -58,6 +60,7 @@ input:
     args_mapping: root = [ "article", now().ts_format("2006-01-02") ] # No default (optional)
     prefix: "" # No default (optional)
     suffix: "" # No default (optional)
+    auto_replay_nacks: true
     init_files: [] # No default (optional)
     init_statement: | # No default (optional)
       CREATE TABLE IF NOT EXISTS some_table (
@@ -229,6 +232,14 @@ An optional suffix to append to the select query.
 
 
 Type: `string`  
+
+### `auto_replay_nacks`
+
+Whether messages that are rejected (nacked) at the output level should be automatically replayed indefinitely, eventually resulting in back pressure if the cause of the rejections is persistent. If set to `false` these messages will instead be deleted. Disabling auto replays can greatly improve memory efficiency of high throughput streams as the original shape of the data can be discarded immediately upon consumption and mutation.
+
+
+Type: `bool`  
+Default: `true`  
 
 ### `init_files`
 

@@ -3,9 +3,49 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 4.27.0 - TBD
 
-## 4.25.0 - TBD
+### Added
+
+- New `nats_kv` cache type.
+- The `nats_jetstream` input now supports `last_per_subject` and `new` deliver fallbacks.
+- Field `error_patterns` added to the `drop_on` output.
+- New `redis_scan` input type.
+- Field `auto_replay_nacks` added to all inputs that traditionally automatically retry nacked messages as a toggle for this behaviour.
+
+### Fixed
+
+- The `unarchive` processor no longer yields linting errors when the format `csv:x` is specified. This is a regression introduced in v4.25.0.
+- The `sftp` input will no longer consume files when the watcher cache returns an error. Instead, it will reattempt the file upon the next poll.
+
+## 4.26.0 - 2024-03-18
+
+### Added
+
+- Field `credit` added to the `amqp_1` input to specify the maximum number of unacknowledged messages the sender can transmit.
+- Bloblang now supports root-level `if` statements.
+- New experimental `sql` cache.
+- Fields `batch_size`, `sort` and `limit` added to the `mongodb` input.
+- Field `idemponent_write` added to the `kafka` output.
+
+### Changed
+
+- The default value of the `amqp_1.credit` input has changed from `1` to `64`.
+- The `mongodb` processor and output now support extended JSON in canonical form for document, filter and hint mappings.
+- The `open_telemetry_collector` tracer has had the `url` field of gRPC and HTTP collectors deprecated in favour of `address`, which more accurately describes the intended format of endpoints. The old style will continue to work, but eventually will have its default value removed and an explicit value will be required.
+
+### Fixed
+
+- Resource config imports containing `%` characters were being incorrectly parsed during unit test execution. This was a regression introduced in v4.25.0.
+- Dynamic input and output config updates containing `%` characters were being incorrectly parsed. This was a regression introduced in v4.25.0.
+
+## 4.25.1 - 2024-03-01
+
+### Fixed
+
+- Fixed a regression in v4.25.0 where [template based components](https://www.benthos.dev/docs/configuration/templating) were not parsing correctly from configs.
+
+## 4.25.0 - 2024-03-01
 
 ### Added
 
@@ -21,6 +61,7 @@ All notable changes to this project will be documented in this file.
 - The `aws_kinesis` input and output now support specifying ARNs as the stream target.
 - New `azure_cosmosdb` input, processor and output.
 - All `sql_*` components now support the `gocosmos` driver.
+- New `opensearch` output.
 
 ### Fixed
 
@@ -32,12 +73,14 @@ All notable changes to this project will be documented in this file.
 - The `generate` input no longer adds an extra second to `interval: '@every x'` syntax.
 - The `nats_jetstream` input no longer fails to locate mirrored streams.
 - Fixed a rare panic in batching mechanisms with a specified `period`, where data arrives in low volumes and is sporadic.
+- Executing config unit tests should no longer fail due to output resources failing to connect.
 
 ### Changed
 
 - The `parse_parquet` Bloblang function, `parquet_decode`, `parquet_encode` processors and the `parquet` input have all been upgraded to the latest version of the underlying Parquet library. Since this underlying library is experimental it is likely that behaviour changes will result. One significant change is that encoding numerical values that are larger than the column type (`float64` into `FLOAT`, `int64` into `INT32`, etc) will no longer be automatically converted.
 - The `parse_log` processor field `codec` is now deprecated.
 - *WARNING*: Many components have had their underlying implementations moved onto newer internal APIs for defining and extracting their configuration fields. It's recommended that upgrades to this version are performed cautiously.
+- *WARNING*: All AWS components have been upgraded to the latest client libraries. Although lots of testing has been done, these libraries have the potential to differ in discrete ways in terms of how credentials are evaluated, cross-account connections are performed, and so on. It's recommended that upgrades to this version are performed cautiously.
 
 ## 4.24.0 - 2023-11-24
 
