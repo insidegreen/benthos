@@ -5,9 +5,8 @@ import (
 	"crypto/tls"
 	"strings"
 
+	"github.com/Jeffail/shutdown"
 	"github.com/benthosdev/benthos/v4/internal/component/input/span"
-	"github.com/benthosdev/benthos/v4/internal/impl/nats/auth"
-	"github.com/benthosdev/benthos/v4/internal/shutdown"
 	"github.com/benthosdev/benthos/v4/internal/transaction"
 	"github.com/benthosdev/benthos/v4/public/service"
 	"github.com/nats-io/nats.go"
@@ -38,7 +37,7 @@ This input adds the following metadata fields to each message:
 You can access these metadata fields using
 [function interpolation](/docs/configuration/interpolation#bloblang-queries).
 
-` + ConnectionNameDescription() + auth.Description()).
+` + connectionNameDescription() + authDescription()).
 	Field(service.NewStringListField("urls").
 		Description("A list of URLs to connect to. If an item of the list contains commas it will be expanded into multiple URLs.").
 		Example([]string{"nats://127.0.0.1:4222"}).
@@ -79,7 +78,7 @@ You can access these metadata fields using
 			},
 		}})).
 	Field(service.NewTLSToggledField("tls")).
-	Field(service.NewInternalField(auth.FieldSpec())).
+	Field(service.NewInternalField(authFieldSpec())).
 	Field(span.ExtractTracingSpanMappingDocs().Version(tracingVersion))
 
 func init() {
@@ -224,7 +223,7 @@ type natsService struct {
 	description  string
 	queueGroup   string
 	groupsConfig []*groupConfig
-	authConf     auth.Config
+	authConf     authConfig
 	tlsConf      *tls.Config
 
 	label string
@@ -257,10 +256,10 @@ func (n *natsService) Close(ctx context.Context) error {
 			close(n.input)
 			n.input = nil
 		}
-		sig.ShutdownComplete()
+		sig.TriggerHasStopped()
 	}()
 	select {
-	case <-sig.HasClosedChan():
+	case <-sig.HardStopChan():
 	case <-ctx.Done():
 		return ctx.Err()
 	}
