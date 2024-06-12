@@ -1,5 +1,6 @@
 ---
 title: nats_request_reply
+slug: nats_request_reply
 type: processor
 status: experimental
 categories: ["Services"]

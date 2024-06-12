@@ -10,7 +10,6 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/benthosdev/benthos/v4/internal/impl/nats/auth"
 	"github.com/benthosdev/benthos/v4/public/service"
 )
 
@@ -37,7 +36,7 @@ This input adds the following metadata fields to each message:
 You can access these metadata fields using
 [function interpolation](/docs/configuration/interpolation#bloblang-queries).
 
-` + ConnectionNameDescription() + auth.Description()).
+` + ConnectionNameDescription() + authDescription()).
 		Field(service.NewStringListField("urls").
 			Description("A list of URLs to connect to. If an item of the list contains commas it will be expanded into multiple URLs.").
 			Example([]string{"nats://127.0.0.1:4222"}).
@@ -67,7 +66,7 @@ You can access these metadata fields using
 			Optional().
 			Default("3s")).
 		Field(service.NewTLSToggledField("tls")).
-		Field(service.NewInternalField(auth.FieldSpec()))
+		Field(service.NewInternalField(authFieldSpec()))
 }
 
 func init() {
@@ -86,7 +85,7 @@ type requestReplyProcessor struct {
 	inboxPrefix string
 	timeout     time.Duration
 	tlsConf     *tls.Config
-	authConf    auth.Config
+	authConf    authConfig
 
 	log *service.Logger
 	fs  *service.FS

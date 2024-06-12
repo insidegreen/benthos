@@ -1,5 +1,6 @@
 ---
 title: nats_service
+slug: nats_service
 type: input
 status: experimental
 categories: ["Services"]
